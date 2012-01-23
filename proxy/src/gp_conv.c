@@ -259,16 +259,31 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t in, gssx_ctx *out)
     int is_open;
     int ret;
 
+    out->exported_context_token = malloc(sizeof(octet_string));
+    if (!out->exported_context_token) {
+        ret = ENOMEM;
+        goto done;
+    }
+    ret_maj = gss_export_sec_context(&ret_min, &in,
+                                     out->exported_context_token);
+    if (ret_maj) {
+        ret = EINVAL;
+        goto done;
+    }
+
+    /* TODO: For mechs that need multiple roundtrips to complete */
+    /* out->state; */
+
+    /* we do not need the client to release anything nutil we handle state */
+    out->needs_release = false;
+
     ret_maj = gss_inquire_context(&ret_min, in, &src_name, &targ_name,
                                   &lifetime_rec, &mech_type, &ctx_flags,
                                   &is_locally_initiated, &is_open);
     if (ret_maj) {
-        return -1;
+        ret = EINVAL;
+        goto done;
     }
-
-    /* TODO */
-    /* out->exported_context_token; */
-    /* out->state; */
 
     ret = gp_conv_oid_to_gssx(mech_type, &out->mech);
     if (ret) {
@@ -296,6 +311,9 @@ int gp_conv_ctx_id_to_gssx(gss_ctx_id_t in, gssx_ctx *out)
     if (is_open) {
         out->open = true;
     }
+
+    /* Leave this empty, used only on the way in for init_sec_context */
+    /* out->gssx_option */
 
 done:
     gss_release_name(&ret_min, &src_name);
