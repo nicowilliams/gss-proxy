@@ -42,9 +42,7 @@
 
 struct gp_creds {
     int type;
-#ifdef HAVE_UCRED
     struct ucred ucred;
-#endif
 };
 
 struct unix_sock_conn {
@@ -174,7 +172,6 @@ done:
 
 static int get_peercred(int fd, struct gp_conn *conn)
 {
-#ifdef HAVE_UCRED
     socklen_t len;
     int ret;
 
@@ -188,7 +185,6 @@ static int get_peercred(int fd, struct gp_conn *conn)
     }
 
     conn->creds.type |= CRED_TYPE_UNIX;
-#endif
     return 0;
 }
 
